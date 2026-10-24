@@ -1,3 +1,5 @@
+import pytest
+
 from mini_agent import llm
 
 
@@ -47,3 +49,10 @@ def test_load_api_key_matches_provider_case_insensitively(tmp_path):
     auth = tmp_path / "auth.json"
     auth.write_text('{"deepseek": {"key": "sk-test"}}')
     assert llm.load_api_key("DeepSeek", filename=str(auth)) == "sk-test"
+
+
+def test_load_api_key_raises_for_unknown_provider(tmp_path):
+    auth = tmp_path / "auth.json"
+    auth.write_text('{"deepseek": {"key": "sk-test"}}')
+    with pytest.raises(KeyError):
+        llm.load_api_key("openai", filename=str(auth))
