@@ -56,11 +56,14 @@ def read_reply(messages, api_key):
             print(content, end="", flush=True)
 
         for fragment in delta.get("tool_calls") or []:
-            tool_call = tool_calls.setdefault(fragment["index"], {
-                "id": "",
-                "type": "function",
-                "function": {"name": "", "arguments": ""},
-            })
+            tool_call = tool_calls.setdefault(
+                fragment["index"],
+                {
+                    "id": "",
+                    "type": "function",
+                    "function": {"name": "", "arguments": ""},
+                },
+            )
             tool_call["id"] += fragment.get("id") or ""
             function = fragment.get("function") or {}
             for field in ("name", "arguments"):

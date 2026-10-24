@@ -21,4 +21,8 @@ packages = ["src/mini_agent"]
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "ruff>=0.17.2",
 ]
+
+[tool.ruff]
+line-length = 100

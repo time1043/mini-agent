@@ -26,11 +26,13 @@ def main():
             for tool_call in reply["tool_calls"]:
                 arguments = json.loads(tool_call["function"]["arguments"])
                 output = run_bash(arguments["command"])
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call["id"],
-                    "content": output,
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": output,
+                    }
+                )
 
 
 def run():

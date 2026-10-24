@@ -28,9 +28,7 @@ def test_read_reply_assembles_reasoning_content_and_tool_calls(monkeypatch):
         b'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"","function":{"name":"","arguments":"}"}}]}}]}',
         b"data: [DONE]",
     ]
-    monkeypatch.setattr(
-        llm.requests, "post", lambda *args, **kwargs: FakeSseResponse(lines)
-    )
+    monkeypatch.setattr(llm.requests, "post", lambda *args, **kwargs: FakeSseResponse(lines))
 
     reply = llm.read_reply([{"role": "user", "content": "hi"}], "sk-test")
 
