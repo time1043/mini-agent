@@ -1,0 +1,11 @@
+# for macos
+.DS_Store
+
+# for nodejs
+node_modules/
+dist/
+
+# for python
+.venv
+venv/
+__pycache__/
