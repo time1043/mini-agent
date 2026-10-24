@@ -4,8 +4,8 @@ from typing import Any
 
 import requests
 
-from tools import BASH_TOOL
-from ui import GRAY, RESET
+from mini_agent.tools import BASH_TOOL
+from mini_agent.ui import GRAY, RESET
 
 
 def load_api_key(provider, filename="~/.pi/agent/auth.json"):

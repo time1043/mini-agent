@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import json
 
-from llm import load_api_key, read_reply
-from tools import run_bash
-from ui import banner, prompt
+from mini_agent.llm import load_api_key, read_reply
+from mini_agent.tools import run_bash
+from mini_agent.ui import banner, prompt
 
 SYSTEM_PROMPT = "使用 bash 完成当前目录下的任务。中文回复。"
 
@@ -33,8 +33,12 @@ def main():
                 })
 
 
-if __name__ == "__main__":
+def run():
     try:
         main()
     except (EOFError, KeyboardInterrupt):
         print()
+
+
+if __name__ == "__main__":
+    run()

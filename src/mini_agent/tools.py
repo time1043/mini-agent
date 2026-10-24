@@ -1,6 +1,6 @@
 import subprocess
 
-from ui import CYAN, RESET
+from mini_agent.ui import CYAN, RESET
 
 BASH_TOOL = {
     "type": "function",
