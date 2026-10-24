@@ -78,7 +78,7 @@ def stream_deltas(messages, api_key):
 
 
 def read_reply(messages, api_key):
-    reply = {"role": "assistant", "content": "", "reasoning_content": ""}
+    reply: dict = {"role": "assistant", "content": "", "reasoning_content": ""}
     tool_calls = {}
     for delta in stream_deltas(messages, api_key):
         reasoning = delta.get("reasoning_content") or ""
@@ -104,10 +104,10 @@ def read_reply(messages, api_key):
             for field in ("name", "arguments"):
                 tool_call["function"][field] += function.get(field) or ""
 
-        if tool_calls:
-            reply["tool_calls"] = list(tool_calls.values())
-        print()
-        return reply
+    if tool_calls:
+        reply["tool_calls"] = list(tool_calls.values())
+    print()
+    return reply
 
 
 def main():
