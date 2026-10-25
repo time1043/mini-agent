@@ -20,6 +20,7 @@
   "packageManager": "pnpm@12.15.0",
   "type": "module",
   "devDependencies": {
+    "@tsconfig/node-lts": "^24.0.1",
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2"
   },

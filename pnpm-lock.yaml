@@ -170,6 +170,9 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
     devDependencies:
+      '@tsconfig/node-lts':
+        specifier: ^24.0.1
+        version: 24.0.1
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
@@ -334,6 +337,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@tsconfig/node-lts@24.0.1':
+    resolution: {integrity: sha512-xo+1KtV5zVb90fyyeglG1n5cqg3cQXLlCkEpLptYlZUNk28xmwhuD5GmxoXwmrVtUTvaMyclun9kAd0TK7H+Pg==}
 
   '@types/node@26.6.5':
     resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
@@ -560,6 +566,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@tsconfig/node-lts@24.0.1': {}
 
   '@types/node@26.6.5':
     dependencies:
