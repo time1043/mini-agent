@@ -6,8 +6,8 @@
 - https://api-docs.deepseek.com/
 
 ```
-# export DEEPSEEK_KEY="sk-..."
-echo $DEEPSEEK_KEY
+# export DEEPSEEK_API_KEY="sk-..."
+echo $DEEPSEEK_API_KEY
 ```
 
 ## Once
@@ -17,7 +17,7 @@ echo $DEEPSEEK_KEY
 
 ```shell
 curl -sS https://api.deepseek.com/chat/completions \
-  -H "Authorization: Bearer $DEEPSEEK_KEY" \
+  -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"deepseek-flash","messages":[{"role":"user","content":"hi"}],"stream":false}'
 ```
@@ -58,7 +58,7 @@ curl -sS https://api.deepseek.com/chat/completions \
 
 ```shell
 curl -sS https://api.deepseek.com/chat/completions \
-  -H "Authorization: Bearer $DEEPSEEK_KEY" \
+  -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek-flash",
@@ -157,7 +157,7 @@ tool_call_id       => call_00_IfnJnR2LzDdPvmgiX8Hs6447
 
 ```shell
 curl -sS https://api.deepseek.com/chat/completions \
-  -H "Authorization: Bearer $DEEPSEEK_KEY" \
+  -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek-flash",
