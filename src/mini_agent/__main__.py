@@ -1,3 +1,3 @@
-from mini_agent.agent import run
+from mini_agent.main import run
 
 run()

@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mini-agent = "mini_agent.agent:run"
+mini-agent = "mini_agent.main:run"
 
 [build-system]
 requires = ["hatchling"]
