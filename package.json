@@ -8,13 +8,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "tsc --noEmit && tsx src/agent.ts",
+    "dev": "tsc && node src/agent.ts",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "dependencies": {
-    "tsx": "^4.23.15"
+    "test": "tsc && node --test 'src/agent/**/*.test.ts'"
   },
   "devDependencies": {
     "@tsconfig/node-lts": "^24.0.1",
