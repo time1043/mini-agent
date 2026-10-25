@@ -4,7 +4,7 @@ import json
 import subprocess
 from pathlib import Path
 
-import requests
+from anthropic import Anthropic
 
 
 def load_api_key(provider, filename="~/.pi/agent/auth.json"):
@@ -18,16 +18,19 @@ RESET = "\033[0m"
 
 SYSTEM_PROMPT = "使用 bash 完成当前目录下的任务。中文回复。"
 
+MODEL = "deepseek-flash"
+
+BASE_URL = "https://api.deepseek.com/anthropic"
+
+MAX_TOKENS = 8192
+
 BASH_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "bash",
-        "description": "在独立、非交互的 bash 进程中执行命令。返回退出码和输出。",
-        "parameters": {
-            "type": "object",
-            "properties": {"command": {"type": "string"}},
-            "required": ["command"],
-        },
+    "name": "bash",
+    "description": "在独立、非交互的 bash 进程中执行命令。返回退出码和输出。",
+    "input_schema": {
+        "type": "object",
+        "properties": {"command": {"type": "string"}},
+        "required": ["command"],
     },
 }
 
@@ -51,61 +54,29 @@ def run_bash(command):
     return output
 
 
-def stream_deltas(messages, api_key):
-    with requests.post(
-        "https://api.deepseek.com/chat/completions",
-        headers={"Authorization": f"Bearer {api_key}"},
-        json={
-            "model": "deepseek-flash",
-            "messages": messages,
-            "tools": [BASH_TOOL],
-            "thinking": {"type": "enabled"},
-            "stream": True,
-        },
-        stream=True,
-        timeout=180,
-    ) as response:
-        response.raise_for_status()
-        for line in response.iter_lines(chunk_size=1):
-            if not line.startswith(b"data:"):
+def read_reply(client, messages):
+    printing_thinking = False
+    with client.messages.stream(
+        model=MODEL,
+        system=SYSTEM_PROMPT,
+        messages=messages,
+        tools=[BASH_TOOL],
+        max_tokens=MAX_TOKENS,
+        thinking={"type": "enabled", "budget_tokens": 4096},
+    ) as stream:
+        for event in stream:
+            if event.type != "content_block_delta":
                 continue
-            data = line[5:].strip()
-            if data == b"[DONE]":
-                return
-            chunk = json.loads(data)
-            if choices := chunk.get("choices"):
-                yield choices[0]["delta"]
-
-
-def read_reply(messages, api_key):
-    reply: dict = {"role": "assistant", "content": "", "reasoning_content": ""}
-    tool_calls = {}
-    for delta in stream_deltas(messages, api_key):
-        reasoning = delta.get("reasoning_content") or ""
-        content = delta.get("content") or ""
-
-        if reasoning:
-            reply["reasoning_content"] += reasoning
-            print(f"{GRAY}{reasoning}{RESET}", end="", flush=True)
-        if content:
-            if not reply["content"] and reply["reasoning_content"]:
-                print("\n")
-            reply["content"] += content
-            print(content, end="", flush=True)
-
-        for fragment in delta.get("tool_calls") or []:
-            tool_call = tool_calls.setdefault(fragment["index"], {
-                "id": "",
-                "type": "function",
-                "function": {"name": "", "arguments": ""},
-            })
-            tool_call["id"] += fragment.get("id") or ""
-            function = fragment.get("function") or {}
-            for field in ("name", "arguments"):
-                tool_call["function"][field] += function.get(field) or ""
-
-    if tool_calls:
-        reply["tool_calls"] = list(tool_calls.values())
+            delta = event.delta
+            if delta.type == "thinking_delta":
+                printing_thinking = True
+                print(f"{GRAY}{delta.thinking}{RESET}", end="", flush=True)
+            elif delta.type == "text_delta":
+                if printing_thinking:
+                    print("\n")
+                    printing_thinking = False
+                print(delta.text, end="", flush=True)
+        reply = stream.get_final_message()
     print()
     return reply
 
@@ -116,26 +87,35 @@ def main():
     except FileNotFoundError:
         print("MiniAgent")
 
-    api_key = load_api_key("DeepSeek")
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    client = Anthropic(
+        auth_token=load_api_key("DeepSeek"),
+        base_url=BASE_URL,
+        timeout=180,
+    )
+    messages = []
 
     while user_input := input(f"\n{CYAN}>>> {RESET}").strip():
         print()
         messages.append({"role": "user", "content": user_input})
 
         while True:
-            reply = read_reply(messages, api_key)
-            messages.append(reply)
-            if not reply.get("tool_calls"):
+            reply = read_reply(client, messages)
+            messages.append({"role": "assistant", "content": reply.content})
+            if reply.stop_reason != "tool_use":
                 break
-            for tool_call in reply["tool_calls"]:
-                arguments = json.loads(tool_call["function"]["arguments"])
-                output = run_bash(arguments["command"])
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call["id"],
-                    "content": output,
-                })
+            tool_results = []
+            for block in reply.content:
+                if block.type == "tool_use":
+                    output = run_bash(block.input["command"])
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": output,
+                        }
+                    )
+            messages.append({"role": "user", "content": tool_results})
+
 
 if __name__ == "__main__":
     try:
