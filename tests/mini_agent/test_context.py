@@ -2,6 +2,7 @@ import dataclasses
 
 import pytest
 
+from fakes import FakeTool
 from mini_agent.domain.context import Context
 from mini_agent.domain.session import (
     AssistantMessage,
@@ -9,16 +10,6 @@ from mini_agent.domain.session import (
     ToolCall,
     UserMessage,
 )
-from mini_agent.domain.tool import Tool
-
-
-class FakeTool(Tool):
-    name = "fake"
-    description = "a fake tool"
-    parameters: dict = {}
-
-    def execute(self, arguments):
-        return ""
 
 
 def test_assistant_context_carries_instruction_tools_and_history():

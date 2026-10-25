@@ -27,6 +27,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
+src = ["src", "tests/mini_agent"]
 
 [tool.ruff.lint]
 # Tool 子类用声明式类属性定义 name/description/parameters
