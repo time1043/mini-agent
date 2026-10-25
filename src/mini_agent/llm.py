@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -7,18 +8,34 @@ import requests
 from mini_agent.tools import BASH_TOOL
 from mini_agent.ui import GRAY, RESET
 
+DEFAULT_BASE_URL = "https://api.deepseek.com"
+DEFAULT_MODEL = "deepseek-flash"
+
 
 def load_api_key(provider, filename="~/.pi/agent/auth.json"):
-    auth = json.loads(Path(filename).expanduser().read_text(encoding="utf-8"))
-    return auth[provider.casefold()]["key"]
+    """优先读环境变量 <PROVIDER>_API_KEY，其次读本地 auth.json。"""
+    if key := os.environ.get(f"{provider.upper()}_API_KEY"):
+        return key
+
+    path = Path(filename).expanduser()
+    if path.exists():
+        auth = json.loads(path.read_text(encoding="utf-8"))
+        if entry := auth.get(provider.casefold()):
+            return entry["key"]
+
+    raise SystemExit(
+        f"未找到 {provider} 的 API Key。\n"
+        f"请设置环境变量 {provider.upper()}_API_KEY，或在 {path} 中配置。"
+    )
 
 
 def stream_deltas(messages, api_key):
+    base_url = os.environ.get("MINI_AGENT_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
     with requests.post(
-        "https://api.deepseek.com/chat/completions",
+        f"{base_url}/chat/completions",
         headers={"Authorization": f"Bearer {api_key}"},
         json={
-            "model": "deepseek-flash",
+            "model": os.environ.get("MINI_AGENT_MODEL", DEFAULT_MODEL),
             "messages": messages,
             "tools": [BASH_TOOL],
             "thinking": {"type": "enabled"},

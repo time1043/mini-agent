@@ -51,8 +51,20 @@ def test_load_api_key_matches_provider_case_insensitively(tmp_path):
     assert llm.load_api_key("DeepSeek", filename=str(auth)) == "sk-test"
 
 
+def test_load_api_key_prefers_env(monkeypatch, tmp_path):
+    auth = tmp_path / "auth.json"
+    auth.write_text('{"deepseek": {"key": "sk-file"}}')
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-env")
+    assert llm.load_api_key("DeepSeek", filename=str(auth)) == "sk-env"
+
+
 def test_load_api_key_raises_for_unknown_provider(tmp_path):
     auth = tmp_path / "auth.json"
     auth.write_text('{"deepseek": {"key": "sk-test"}}')
-    with pytest.raises(KeyError):
+    with pytest.raises(SystemExit):
         llm.load_api_key("openai", filename=str(auth))
+
+
+def test_load_api_key_raises_when_file_missing(tmp_path):
+    with pytest.raises(SystemExit):
+        llm.load_api_key("deepseek", filename=str(tmp_path / "nope.json"))

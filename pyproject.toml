@@ -1,12 +1,26 @@
 [project]
 name = "mini-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "一个跑在终端里的极简 AI 编程助手，通过 bash 工具完成当前目录下的任务"
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "oswin902" }]
+keywords = ["agent", "cli", "llm", "deepseek", "ai"]
+classifiers = [
+    "Environment :: Console",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: User Interfaces",
+]
 dependencies = [
     "requests>=2.34.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/oswin902/mini-agent"
+Issues = "https://github.com/oswin902/mini-agent/issues"
 
 [project.scripts]
 mini-agent = "mini_agent.agent:run"
@@ -18,12 +32,18 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/mini_agent"]
 
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml"]
+
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.2",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
