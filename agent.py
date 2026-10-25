@@ -1,10 +1,11 @@
+
 #!/usr/bin/env python3
 
 import json
 import subprocess
 from pathlib import Path
 
-import requests
+from openai import OpenAI
 
 
 def load_api_key(provider, filename="~/.pi/agent/auth.json"):
@@ -17,6 +18,10 @@ CYAN = "\033[36m"
 RESET = "\033[0m"
 
 SYSTEM_PROMPT = "使用 bash 完成当前目录下的任务。中文回复。"
+
+MODEL = "deepseek-flash"
+
+BASE_URL = "https://api.deepseek.com"
 
 BASH_TOOL = {
     "type": "function",
@@ -51,38 +56,25 @@ def run_bash(command):
     return output
 
 
-def stream_deltas(messages, api_key):
-    with requests.post(
-        "https://api.deepseek.com/chat/completions",
-        headers={"Authorization": f"Bearer {api_key}"},
-        json={
-            "model": "deepseek-flash",
-            "messages": messages,
-            "tools": [BASH_TOOL],
-            "thinking": {"type": "enabled"},
-            "stream": True,
-        },
+def stream_deltas(client, messages):
+    stream = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        tools=[BASH_TOOL],
+        extra_body={"thinking": {"type": "enabled"}},
         stream=True,
-        timeout=180,
-    ) as response:
-        response.raise_for_status()
-        for line in response.iter_lines(chunk_size=1):
-            if not line.startswith(b"data:"):
-                continue
-            data = line[5:].strip()
-            if data == b"[DONE]":
-                return
-            chunk = json.loads(data)
-            if choices := chunk.get("choices"):
-                yield choices[0]["delta"]
+    )
+    for chunk in stream:
+        if chunk.choices:
+            yield chunk.choices[0].delta
 
 
-def read_reply(messages, api_key):
+def read_reply(client, messages):
     reply: dict = {"role": "assistant", "content": "", "reasoning_content": ""}
-    tool_calls = {}
-    for delta in stream_deltas(messages, api_key):
-        reasoning = delta.get("reasoning_content") or ""
-        content = delta.get("content") or ""
+    tool_calls: dict = {}
+    for delta in stream_deltas(client, messages):
+        reasoning = getattr(delta, "reasoning_content", None) or ""
+        content = delta.content or ""
 
         if reasoning:
             reply["reasoning_content"] += reasoning
@@ -93,16 +85,16 @@ def read_reply(messages, api_key):
             reply["content"] += content
             print(content, end="", flush=True)
 
-        for fragment in delta.get("tool_calls") or []:
-            tool_call = tool_calls.setdefault(fragment["index"], {
+        for fragment in delta.tool_calls or []:
+            tool_call = tool_calls.setdefault(fragment.index, {
                 "id": "",
                 "type": "function",
                 "function": {"name": "", "arguments": ""},
             })
-            tool_call["id"] += fragment.get("id") or ""
-            function = fragment.get("function") or {}
-            for field in ("name", "arguments"):
-                tool_call["function"][field] += function.get(field) or ""
+            tool_call["id"] += fragment.id or ""
+            if fragment.function:
+                tool_call["function"]["name"] += fragment.function.name or ""
+                tool_call["function"]["arguments"] += fragment.function.arguments or ""
 
     if tool_calls:
         reply["tool_calls"] = list(tool_calls.values())
@@ -116,7 +108,11 @@ def main():
     except FileNotFoundError:
         print("MiniAgent")
 
-    api_key = load_api_key("DeepSeek")
+    client = OpenAI(
+        api_key=load_api_key("DeepSeek"),
+        base_url=BASE_URL,
+        timeout=180,
+    )
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
     while user_input := input(f"\n{CYAN}>>> {RESET}").strip():
@@ -124,7 +120,7 @@ def main():
         messages.append({"role": "user", "content": user_input})
 
         while True:
-            reply = read_reply(messages, api_key)
+            reply = read_reply(client, messages)
             messages.append(reply)
             if not reply.get("tool_calls"):
                 break
