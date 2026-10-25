@@ -1,3 +1,5 @@
+import type { IncomingMessage, Server, ServerResponse } from 'node:http'
+
 /**
  * Web API 适配器：把 AgentService 暴露为 HTTP 接口（node:http，零依赖）。
  * 路由：
@@ -7,7 +9,6 @@
  * SessionNotFoundError 是唯一的 404 来源；其余错误统一 500 且不泄露内部细节。
  */
 import { createServer } from 'node:http'
-import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 
 import { SessionNotFoundError } from '../../app/ports.ts'
 import { AgentService } from '../../app/service.ts'
@@ -27,8 +28,8 @@ export function createApp(service: AgentService): Server {
       await route(request, response)
     } catch (error) {
       if (error instanceof BodyTooLargeError) {
+        // 不主动 destroy 请求：提前响应后由 Node 关闭未消费完的连接，避免客户端收到 RST。
         send(response, 413, { error: 'body too large' })
-        response.on('finish', () => request.destroy())
         return
       }
       if (error instanceof SessionNotFoundError) {
@@ -118,7 +119,11 @@ function readBody(request: IncomingMessage): Promise<Record<string, unknown> | n
       }
       try {
         const parsed: unknown = JSON.parse(text)
-        resolve(parsed !== null && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null)
+        resolve(
+          parsed !== null && typeof parsed === 'object'
+            ? (parsed as Record<string, unknown>)
+            : null,
+        )
       } catch {
         resolve(null)
       }

@@ -1,15 +1,20 @@
-import assert from 'node:assert/strict'
-import { test } from 'node:test'
 import type { AddressInfo } from 'node:net'
 
-import { Assistant, ToolCallReviewer } from '../../domain/roles.ts'
-import { assistantMessage } from '../../domain/session.ts'
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import type { SessionStore } from '../../app/ports.ts'
+
 import { AgentService } from '../../app/service.ts'
 import { MemorySessionStore, ScriptedModelClient } from '../../app/testing.ts'
+import { Assistant, ToolCallReviewer } from '../../domain/roles.ts'
+import { assistantMessage } from '../../domain/session.ts'
 import { createApp } from './web.ts'
 
-const aServer = async (t: import('node:test').TestContext, outputs: unknown[] = [assistantMessage('你好')]) => {
+const aServer = async (
+  t: import('node:test').TestContext,
+  outputs: unknown[] = [assistantMessage('你好')],
+) => {
   const store: SessionStore = new MemorySessionStore()
   const service = new AgentService({
     modelClient: new ScriptedModelClient(outputs),
@@ -35,7 +40,10 @@ test('POST /sessions creates a session', async (t) => {
   assert.equal(response.status, 201)
   const body = (await response.json()) as { id: string }
   assert.match(body.id, /^[0-9]{8}-[0-9]{6}-[0-9a-f]{8}$/)
-  assert.deepEqual((await store.list()).map((session) => session.id), [body.id])
+  assert.deepEqual(
+    (await store.list()).map((session) => session.id),
+    [body.id],
+  )
 })
 
 test('GET /sessions lists sessions with message counts', async (t) => {
@@ -109,7 +117,10 @@ test('routing rejects unknown paths and wrong methods', async (t) => {
   const session = await service.newSession()
 
   assert.equal((await fetch(`${base}/nope`)).status, 404)
-  assert.equal((await fetch(`${base}/sessions/${session.id}/messages/extra`, { method: 'POST' })).status, 404)
+  assert.equal(
+    (await fetch(`${base}/sessions/${session.id}/messages/extra`, { method: 'POST' })).status,
+    404,
+  )
   assert.equal((await fetch(`${base}/sessions/${session.id}/messages`)).status, 405)
   assert.equal((await fetch(`${base}/sessions`, { method: 'DELETE' })).status, 405)
   assert.equal((await fetch(`${base}/sessions/`, { method: 'POST' })).status, 201)
