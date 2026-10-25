@@ -48,3 +48,26 @@ class ScriptedModelClient(ModelClient):
         self.contexts.append(context)
         self.settings.append(model_settings)
         return self._outputs.pop(0)
+
+
+class FakeHttpResponse:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return self._payload
+
+
+def capture_post(monkeypatch, payload):
+    """替换 requests.post：记录调用参数，返回预设响应。"""
+    calls = {}
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        calls.update(url=url, headers=headers, payload=json, timeout=timeout)
+        return FakeHttpResponse(payload)
+
+    monkeypatch.setattr("requests.post", fake_post)
+    return calls
