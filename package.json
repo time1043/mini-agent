@@ -2,16 +2,26 @@
   "name": "mini-agent",
   "version": "1.0.0",
   "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
+    "dev": "tsc --noEmit && tsx src/agent.ts",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "dev": "tsc --noEmit && tsx src/agent.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "dependencies": {
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "@tsconfig/node-lts": "^24.0.1",
+    "@types/node": "^26.6.5",
+    "oxfmt": "^0.74.0",
+    "typescript": "^7.0.2"
+  },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
@@ -19,15 +29,5 @@
       "onFail": "download"
     }
   },
-  "packageManager": "pnpm@12.15.0",
-  "type": "module",
-  "devDependencies": {
-    "@tsconfig/node-lts": "^24.0.1",
-    "@types/node": "^26.6.5",
-    "oxfmt": "^0.74.0",
-    "typescript": "^7.0.2"
-  },
-  "dependencies": {
-    "tsx": "^4.23.15"
-  }
+  "packageManager": "pnpm@12.15.0"
 }
