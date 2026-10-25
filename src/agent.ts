@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { Type, type AssistantMessage, type Context, type Tool } from '@earendil-works/pi-ai'
+import { builtinModels } from '@earendil-works/pi-ai/providers/all'
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -12,39 +14,13 @@ const RESET = '\x1b[0m'
 
 const SYSTEM_PROMPT = '使用 bash 完成当前目录下的任务。中文回复。'
 
+const PROVIDER = 'deepseek'
 const MODEL = 'deepseek-flash'
 
-const CHAT_COMPLETIONS_URL = 'https://api.deepseek.com/chat/completions'
-
-interface Delta {
-  reasoning_content?: string
-  content?: string
-  tool_calls?: {
-    index: number
-    id?: string
-    function?: { name?: string; arguments?: string }
-  }[]
-}
-
-interface ToolCall {
-  id: string
-  type: 'function'
-  function: { name: string; arguments: string }
-}
-
-type Message = Record<string, unknown>
-
-const BASH_TOOL = {
-  type: 'function',
-  function: {
-    name: 'bash',
-    description: '在独立、非交互的 bash 进程中执行命令。返回退出码和输出。',
-    parameters: {
-      type: 'object',
-      properties: { command: { type: 'string' } },
-      required: ['command'],
-    },
-  },
+const BASH_TOOL: Tool = {
+  name: 'bash',
+  description: '在独立、非交互的 bash 进程中执行命令。返回退出码和输出。',
+  parameters: Type.Object({ command: Type.String() }),
 }
 
 function loadApiKey(provider: string, filename = join(homedir(), '.pi/agent/auth.json')): string {
@@ -69,77 +45,27 @@ function runBash(command: string): string {
   return output
 }
 
-async function* streamDeltas(messages: Message[], apiKey: string): AsyncGenerator<Delta> {
-  const response = await fetch(CHAT_COMPLETIONS_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages,
-      tools: [BASH_TOOL],
-      thinking: { type: 'enabled' },
-      stream: true,
-    }),
+const models = builtinModels()
+
+async function readReply(context: Context, apiKey: string): Promise<AssistantMessage> {
+  const stream = models.streamSimple(models.getModel(PROVIDER, MODEL)!, context, {
+    apiKey,
+    reasoning: 'medium',
   })
-  if (!response.ok || !response.body) {
-    throw new Error(`HTTP ${response.status}: ${await response.text()}`)
-  }
-
-  const decoder = new TextDecoder()
-  let buffer = ''
-  for await (const chunk of response.body) {
-    buffer += decoder.decode(chunk, { stream: true })
-    let newline: number
-    while ((newline = buffer.indexOf('\n')) !== -1) {
-      const line = buffer.slice(0, newline).replace(/\r$/, '')
-      buffer = buffer.slice(newline + 1)
-      if (!line.startsWith('data:')) continue
-      const data = line.slice(5).trim()
-      if (data === '[DONE]') return
-      const chunk = JSON.parse(data)
-      if (chunk.choices?.length) yield chunk.choices[0].delta
-    }
-  }
-}
-
-async function readReply(messages: Message[], apiKey: string): Promise<Message> {
-  const reply: Message = { role: 'assistant', content: '', reasoning_content: '' }
-  const toolCalls = new Map<number, ToolCall>()
-  for await (const delta of streamDeltas(messages, apiKey)) {
-    const reasoning = delta.reasoning_content ?? ''
-    const content = delta.content ?? ''
-
-    if (reasoning) {
-      reply.reasoning_content = (reply.reasoning_content as string) + reasoning
-      process.stdout.write(`${GRAY}${reasoning}${RESET}`)
-    }
-    if (content) {
-      if (!(reply.content as string) && reply.reasoning_content) {
+  let printingThinking = false
+  for await (const event of stream) {
+    if (event.type === 'thinking_delta') {
+      printingThinking = true
+      process.stdout.write(`${GRAY}${event.delta}${RESET}`)
+    } else if (event.type === 'text_delta') {
+      if (printingThinking) {
         process.stdout.write('\n\n')
+        printingThinking = false
       }
-      reply.content = (reply.content as string) + content
-      process.stdout.write(content)
-    }
-
-    for (const fragment of delta.tool_calls ?? []) {
-      const toolCall = toolCalls.get(fragment.index) ?? {
-        id: '',
-        type: 'function' as const,
-        function: { name: '', arguments: '' },
-      }
-      toolCalls.set(fragment.index, toolCall)
-      toolCall.id += fragment.id ?? ''
-      toolCall.function.name += fragment.function?.name ?? ''
-      toolCall.function.arguments += fragment.function?.arguments ?? ''
+      process.stdout.write(event.delta)
     }
   }
-
-  if (toolCalls.size > 0) {
-    reply.tool_calls = [...toolCalls.values()]
-  }
+  const reply = await stream.result()
   process.stdout.write('\n')
   return reply
 }
@@ -149,7 +75,11 @@ async function main(): Promise<void> {
   if (banner.error) console.log('MiniAgent')
 
   const apiKey = loadApiKey('DeepSeek')
-  const messages: Message[] = [{ role: 'system', content: SYSTEM_PROMPT }]
+  const context: Context = {
+    systemPrompt: SYSTEM_PROMPT,
+    messages: [],
+    tools: [BASH_TOOL],
+  }
 
   const rl = createInterface({ input: process.stdin })
   rl.pause()
@@ -168,16 +98,24 @@ async function main(): Promise<void> {
     rl.pause()
     if (!userInput) break
     process.stdout.write('\n')
-    messages.push({ role: 'user', content: userInput })
+    context.messages.push({ role: 'user', content: userInput, timestamp: Date.now() })
 
     for (;;) {
-      const reply = await readReply(messages, apiKey)
-      messages.push(reply)
-      if (!reply.tool_calls) break
-      for (const toolCall of reply.tool_calls as ToolCall[]) {
-        const args = JSON.parse(toolCall.function.arguments)
-        const output = runBash(args.command)
-        messages.push({ role: 'tool', tool_call_id: toolCall.id, content: output })
+      const reply = await readReply(context, apiKey)
+      context.messages.push(reply)
+      if (reply.stopReason !== 'toolUse') break
+      for (const block of reply.content) {
+        if (block.type === 'toolCall') {
+          const output = runBash((block.arguments as { command: string }).command)
+          context.messages.push({
+            role: 'toolResult',
+            toolCallId: block.id,
+            toolName: block.name,
+            content: [{ type: 'text', text: output }],
+            isError: false,
+            timestamp: Date.now(),
+          })
+        }
       }
     }
   }
