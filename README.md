@@ -28,14 +28,14 @@ pip install ./mini_agent-0.1.0-py3-none-any.whl
 方式二：从源码安装（需要 uv）
 
 ```bash
-git clone <repo-url> && cd mini-agent
+git clone https://github.com/time1043/mini-agent.git && cd mini-agent
 uv tool install .
 ```
 
 方式三：不安装，直接从 Git 仓库临时运行
 
 ```bash
-uvx --from git+<repo-url> mini-agent
+uvx --from git+https://github.com/time1043/mini-agent.git mini-agent
 ```
 
 ## 配置
