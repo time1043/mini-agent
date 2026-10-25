@@ -7,9 +7,10 @@
  */
 import type { Assistant, ToolCallReviewer } from '../domain/roles.ts'
 import type { Decision } from '../domain/roles.ts'
-import { Session, toolResult, userMessage } from '../domain/session.ts'
 import type { Message, ToolCall, ToolResultMessage } from '../domain/session.ts'
 import type { ModelClient, ModelSettings, SessionStore } from './ports.ts'
+
+import { Session, toolResult, userMessage } from '../domain/session.ts'
 
 export interface AgentServiceOptions {
   readonly modelClient: ModelClient

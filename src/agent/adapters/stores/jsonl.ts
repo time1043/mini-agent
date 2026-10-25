@@ -5,10 +5,11 @@
 import { mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { SessionNotFoundError } from '../../app/ports.ts'
 import type { SessionStore } from '../../app/ports.ts'
-import { Session, isSessionId, messageFromJSON } from '../../domain/session.ts'
 import type { SessionJSON } from '../../domain/session.ts'
+
+import { SessionNotFoundError } from '../../app/ports.ts'
+import { Session, isSessionId, messageFromJSON } from '../../domain/session.ts'
 
 export class JsonlSessionStore implements SessionStore {
   readonly root: string
@@ -56,7 +57,9 @@ export class JsonlSessionStore implements SessionStore {
   }
 
   files(): string[] {
-    return readdirSync(this.root).filter((name) => name.endsWith('.jsonl')).sort()
+    return readdirSync(this.root)
+      .filter((name) => name.endsWith('.jsonl'))
+      .sort()
   }
 }
 

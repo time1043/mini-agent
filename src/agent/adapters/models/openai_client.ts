@@ -1,15 +1,22 @@
+import type { ModelClient, ModelSettings } from '../../app/ports.ts'
+import type { Context, OutputCodec } from '../../domain/context.ts'
+import type { Json } from '../../domain/json.ts'
+import type { Message, ToolCall } from '../../domain/session.ts'
+import type { Tool } from '../../domain/tool.ts'
+import type { ClientOptions } from './common.ts'
+
 /**
  * OpenAI 兼容客户端（DeepSeek 等同款协议）。
  */
 import { ModelError } from '../../app/ports.ts'
-import type { ModelClient, ModelSettings } from '../../app/ports.ts'
-import type { Context, OutputCodec } from '../../domain/context.ts'
-import type { Json } from '../../domain/json.ts'
 import { assistantMessage } from '../../domain/session.ts'
-import type { Message, ToolCall } from '../../domain/session.ts'
-import type { Tool } from '../../domain/tool.ts'
-import { DEFAULT_TIMEOUT_MS, appendJsonHint, extractChatMessage, extractJson, postJson } from './common.ts'
-import type { ClientOptions } from './common.ts'
+import {
+  DEFAULT_TIMEOUT_MS,
+  appendJsonHint,
+  extractChatMessage,
+  extractJson,
+  postJson,
+} from './common.ts'
 
 export class OpenAIModelClient implements ModelClient {
   #baseUrl: string
@@ -106,5 +113,7 @@ function decodeOutput<O>(output: OutputCodec<O>, message: Record<string, unknown
       assistantMessage(typeof message['content'] === 'string' ? message['content'] : '', calls),
     )
   }
-  return output.decode(extractJson(typeof message['content'] === 'string' ? message['content'] : ''))
+  return output.decode(
+    extractJson(typeof message['content'] === 'string' ? message['content'] : ''),
+  )
 }

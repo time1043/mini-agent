@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
-import { test } from 'node:test'
 import { Readable, Writable } from 'node:stream'
+import { test } from 'node:test'
 
-import { Assistant, ToolCallReviewer } from '../../domain/roles.ts'
-import { assistantMessage } from '../../domain/session.ts'
 import { AgentService } from '../../app/service.ts'
 import { MemorySessionStore, ScriptedModelClient } from '../../app/testing.ts'
+import { Assistant, ToolCallReviewer } from '../../domain/roles.ts'
+import { assistantMessage } from '../../domain/session.ts'
 import { CliApp } from './cli.ts'
 
 const aCli = (outputs: unknown[], lines: string[] = []) => {

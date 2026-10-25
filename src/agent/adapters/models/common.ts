@@ -1,9 +1,10 @@
+import type { OutputCodec } from '../../domain/context.ts'
+
 /**
  * 模型客户端共享逻辑：结构化输出的提示注入与提取、统一的 HTTP POST。
  * 所有模型侧失败都折叠成 ModelError，让上层可以按类型处理。
  */
 import { ModelError } from '../../app/ports.ts'
-import type { OutputCodec } from '../../domain/context.ts'
 
 export interface ClientOptions {
   baseUrl: string

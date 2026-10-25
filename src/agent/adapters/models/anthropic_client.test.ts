@@ -32,9 +32,12 @@ test('assistant codec reads text and tool_use blocks', async () => {
     { modelId: 'claude', effort: 'off' },
   )
 
-  assert.deepEqual(reply, assistantMessage('我来跑命令', [
-    { id: 'tu_1', toolName: 'bash', arguments: { command: 'ls' } },
-  ]))
+  assert.deepEqual(
+    reply,
+    assistantMessage('我来跑命令', [
+      { id: 'tu_1', toolName: 'bash', arguments: { command: 'ls' } },
+    ]),
+  )
   assert.equal(calls[0].url, 'https://api.test/v1/messages')
   const headers = calls[0].init.headers as Record<string, string>
   assert.equal(headers['x-api-key'], 'k')
@@ -52,7 +55,12 @@ test('tools map to input_schema and effort maps to output_config', async () => {
     {
       instruction: '指令',
       tools: [
-        { name: 'bash', description: '执行', parameters: { type: 'object', properties: {} }, execute: async () => '' },
+        {
+          name: 'bash',
+          description: '执行',
+          parameters: { type: 'object', properties: {} },
+          execute: async () => '',
+        },
       ],
       messages: [],
       output: assistantCodec,
@@ -68,7 +76,9 @@ test('tools map to input_schema and effort maps to output_config', async () => {
 })
 
 test('json codec decodes from text blocks', async () => {
-  const { client } = aClient({ content: [{ type: 'text', text: '{"should_allow":false,"reason":"危险"}' }] })
+  const { client } = aClient({
+    content: [{ type: 'text', text: '{"should_allow":false,"reason":"危险"}' }],
+  })
   const codec = jsonOutput('"should_allow": boolean', (value) => value as { should_allow: boolean })
 
   const decision = await client.generate(

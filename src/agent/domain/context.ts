@@ -17,10 +17,11 @@ export const assistantOutput: OutputCodec<AssistantMessage> = {
 }
 
 /** 结构化输出：要求模型只回一个 JSON 对象；jsonHint 描述字段，decode 强校验。 */
-export const jsonOutput = <O>(
-  jsonHint: string,
-  decode: (value: unknown) => O,
-): OutputCodec<O> => ({ kind: 'json', jsonHint, decode })
+export const jsonOutput = <O>(jsonHint: string, decode: (value: unknown) => O): OutputCodec<O> => ({
+  kind: 'json',
+  jsonHint,
+  decode,
+})
 
 export interface Context<O> {
   readonly instruction: string

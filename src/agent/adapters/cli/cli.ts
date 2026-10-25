@@ -1,12 +1,14 @@
+import type { Readable, Writable } from 'node:stream'
+
 /**
  * CLI 适配器：交互式命令行入口。
  * 每轮对话独立捕获错误——网络失败打印后继续，已落盘的消息不丢。
  */
 import { createInterface } from 'node:readline'
-import type { Readable, Writable } from 'node:stream'
+
+import type { Message } from '../../domain/session.ts'
 
 import { AgentService } from '../../app/service.ts'
-import type { Message } from '../../domain/session.ts'
 import { CYAN, GRAY, RESET, banner } from './ui.ts'
 
 export interface CliIo {
@@ -79,7 +81,9 @@ export class CliApp {
         try {
           await this.#service.chat(session.id, text, (message) => this.#show(message))
         } catch (error) {
-          this.#output.write(`${GRAY}错误：${error instanceof Error ? error.message : String(error)}${RESET}\n`)
+          this.#output.write(
+            `${GRAY}错误：${error instanceof Error ? error.message : String(error)}${RESET}\n`,
+          )
         }
       }
     } finally {
@@ -92,7 +96,9 @@ export class CliApp {
       case 'assistant':
         if (message.text !== '') this.#output.write(`${message.text}\n`)
         for (const call of message.toolCalls) {
-          this.#output.write(`${CYAN}$ ${call.toolName} ${JSON.stringify(call.arguments)}${RESET}\n`)
+          this.#output.write(
+            `${CYAN}$ ${call.toolName} ${JSON.stringify(call.arguments)}${RESET}\n`,
+          )
         }
         break
       case 'tool_result':

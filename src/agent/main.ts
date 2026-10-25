@@ -8,16 +8,17 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 
+import type { ClientOptions } from './adapters/models/common.ts'
+import type { Effort, ModelClient, ModelSettings } from './app/ports.ts'
+
 import { WebApi } from './adapters/api/web.ts'
 import { CliApp } from './adapters/cli/cli.ts'
-import type { ClientOptions } from './adapters/models/common.ts'
 import { AnthropicModelClient } from './adapters/models/anthropic_client.ts'
 import { GoogleModelClient } from './adapters/models/google_client.ts'
 import { OpenAIModelClient } from './adapters/models/openai_client.ts'
 import { JsonlSessionStore } from './adapters/stores/jsonl.ts'
 import { BashTool } from './adapters/tools/bash.ts'
 import { isEffort } from './app/ports.ts'
-import type { Effort, ModelClient, ModelSettings } from './app/ports.ts'
 import { SessionNotFoundError } from './app/ports.ts'
 import { AgentService } from './app/service.ts'
 import { Assistant, ToolCallReviewer } from './domain/roles.ts'
@@ -57,7 +58,9 @@ export function loadApiKey(provider: string, filename: string = AUTH_FILE): stri
   try {
     auth = JSON.parse(readFileSync(filename, 'utf8'))
   } catch (error) {
-    throw new Error(`无法读取 ${filename}：${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(
+      `无法读取 ${filename}：${error instanceof Error ? error.message : String(error)}`,
+    )
   }
   if (typeof auth !== 'object' || auth === null) {
     throw new Error(`${filename} 的内容不是 JSON 对象`)

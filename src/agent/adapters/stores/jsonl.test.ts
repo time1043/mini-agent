@@ -55,10 +55,7 @@ test('list returns sessions ordered by filename', async (t) => {
   }
 
   const ids = (await store.list()).map((session) => session.id)
-  assert.deepEqual(
-    ids,
-    [...ids].sort(),
-  )
+  assert.deepEqual(ids, [...ids].sort())
 })
 
 test('loading a missing session throws SessionNotFoundError', async (t) => {
@@ -77,14 +74,22 @@ test('loading with a malformed id never touches the filesystem', async (t) => {
 
 test('a broken message line fails the load fast', async (t) => {
   const store = aStore(t)
-  writeFileSync(join(store.root, `${anId}.jsonl`), `${JSON.stringify({ version: 1, id: anId })}\n{"kind":"nope"}\n`, 'utf8')
+  writeFileSync(
+    join(store.root, `${anId}.jsonl`),
+    `${JSON.stringify({ version: 1, id: anId })}\n{"kind":"nope"}\n`,
+    'utf8',
+  )
 
   await assert.rejects(store.load(anId), /unknown message kind/)
 })
 
 test('a wrong header fails the load fast', async (t) => {
   const store = aStore(t)
-  writeFileSync(join(store.root, `${anId}.jsonl`), `${JSON.stringify({ version: 2, id: anId })}\n`, 'utf8')
+  writeFileSync(
+    join(store.root, `${anId}.jsonl`),
+    `${JSON.stringify({ version: 2, id: anId })}\n`,
+    'utf8',
+  )
 
   await assert.rejects(store.load(anId), /bad session file/)
 })

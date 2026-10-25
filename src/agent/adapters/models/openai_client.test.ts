@@ -47,14 +47,22 @@ test('assistant codec maps native tool calls', async () => {
   const { client, calls } = aClient(assistantPayload)
 
   const reply = await client.generate(
-    { instruction: '指令', tools: [], messages: [userMessage('看看目录')], output: { kind: 'assistant', decode: (r) => r } },
+    {
+      instruction: '指令',
+      tools: [],
+      messages: [userMessage('看看目录')],
+      output: { kind: 'assistant', decode: (r) => r },
+    },
     { modelId: 'deepseek-flash', effort: 'off' },
   )
 
-  assert.deepEqual(reply, assistantMessage('我来看看', [
-    { id: 'c1', toolName: 'bash', arguments: { command: 'ls' } },
-    { id: 'c2', toolName: 'bash', arguments: {} },
-  ]))
+  assert.deepEqual(
+    reply,
+    assistantMessage('我来看看', [
+      { id: 'c1', toolName: 'bash', arguments: { command: 'ls' } },
+      { id: 'c2', toolName: 'bash', arguments: {} },
+    ]),
+  )
   assert.equal(calls[0].url, 'https://api.test/chat/completions')
   const headers = calls[0].init.headers as Record<string, string>
   assert.equal(headers['authorization'], 'Bearer k-secret')
@@ -74,7 +82,12 @@ test('tools and effort are only sent when present', async () => {
     {
       instruction: '指令',
       tools: [
-        { name: 'bash', description: '执行', parameters: { type: 'object', properties: {} }, execute: async () => '' },
+        {
+          name: 'bash',
+          description: '执行',
+          parameters: { type: 'object', properties: {} },
+          execute: async () => '',
+        },
       ],
       messages: [],
       output: { kind: 'assistant', decode: (r) => r },
@@ -84,7 +97,14 @@ test('tools and effort are only sent when present', async () => {
 
   const body = JSON.parse(String(calls[0].init.body)) as Record<string, unknown>
   assert.deepEqual(body['tools'], [
-    { type: 'function', function: { name: 'bash', description: '执行', parameters: { type: 'object', properties: {} } } },
+    {
+      type: 'function',
+      function: {
+        name: 'bash',
+        description: '执行',
+        parameters: { type: 'object', properties: {} },
+      },
+    },
   ])
   assert.equal(body['reasoning_effort'], 'low')
 })
@@ -140,11 +160,20 @@ test('json codec asks for json and decodes the reply', async () => {
 
 test('http errors and malformed responses become ModelError', async () => {
   const failing = (async () => new Response('quota', { status: 429 })) as typeof fetch
-  const client = new OpenAIModelClient({ baseUrl: 'https://api.test', apiKey: 'k', fetchImpl: failing })
+  const client = new OpenAIModelClient({
+    baseUrl: 'https://api.test',
+    apiKey: 'k',
+    fetchImpl: failing,
+  })
 
   await assert.rejects(
     client.generate(
-      { instruction: 'x', tools: [], messages: [], output: { kind: 'assistant', decode: (r) => r } },
+      {
+        instruction: 'x',
+        tools: [],
+        messages: [],
+        output: { kind: 'assistant', decode: (r) => r },
+      },
       { modelId: 'm', effort: 'off' },
     ),
     /HTTP 429: quota/,
@@ -153,7 +182,12 @@ test('http errors and malformed responses become ModelError', async () => {
   const { client: broken } = aClient({ unexpected: true })
   await assert.rejects(
     broken.generate(
-      { instruction: 'x', tools: [], messages: [], output: { kind: 'assistant', decode: (r) => r } },
+      {
+        instruction: 'x',
+        tools: [],
+        messages: [],
+        output: { kind: 'assistant', decode: (r) => r },
+      },
       { modelId: 'm', effort: 'off' },
     ),
     /unexpected response shape/,

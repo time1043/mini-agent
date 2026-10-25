@@ -9,10 +9,7 @@ const assistantPayload = {
   candidates: [
     {
       content: {
-        parts: [
-          { text: '我来执行' },
-          { functionCall: { name: 'bash', args: { command: 'ls' } } },
-        ],
+        parts: [{ text: '我来执行' }, { functionCall: { name: 'bash', args: { command: 'ls' } } }],
       },
     },
   ],
@@ -38,9 +35,12 @@ test('assistant codec synthesizes call ids in order', async () => {
     { modelId: 'gemini', effort: 'off' },
   )
 
-  assert.deepEqual(reply, assistantMessage('我来执行', [
-    { id: 'call_0', toolName: 'bash', arguments: { command: 'ls' } },
-  ]))
+  assert.deepEqual(
+    reply,
+    assistantMessage('我来执行', [
+      { id: 'call_0', toolName: 'bash', arguments: { command: 'ls' } },
+    ]),
+  )
   assert.equal(calls[0].url, 'https://g.test/v1beta/models/gemini:generateContent')
   const headers = calls[0].init.headers as Record<string, string>
   assert.equal(headers['x-goog-api-key'], 'k')
@@ -56,7 +56,12 @@ test('effort maps to thinkingConfig and tools to functionDeclarations', async ()
     {
       instruction: '指令',
       tools: [
-        { name: 'bash', description: '执行', parameters: { type: 'object', properties: {} }, execute: async () => '' },
+        {
+          name: 'bash',
+          description: '执行',
+          parameters: { type: 'object', properties: {} },
+          execute: async () => '',
+        },
       ],
       messages: [],
       output: assistantCodec,

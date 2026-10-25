@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
+import type { Tool } from '../domain/tool.ts'
+
 import { Assistant, ToolCallReviewer } from '../domain/roles.ts'
 import { assistantMessage, userMessage } from '../domain/session.ts'
-import type { Tool } from '../domain/tool.ts'
 import { SessionNotFoundError } from './ports.ts'
 import { AgentService } from './service.ts'
 import { FakeTool, MemorySessionStore, ScriptedModelClient } from './testing.ts'
@@ -48,7 +49,10 @@ test('onMessage receives every appended message', async () => {
 
 test('an allowed tool call executes and its result is appended', async () => {
   const tool = new FakeTool('fake', 'fake-output')
-  const { service, store } = aService([assistantMessage('跑一下', [aCall]), allow, assistantMessage('完成')], [tool])
+  const { service, store } = aService(
+    [assistantMessage('跑一下', [aCall]), allow, assistantMessage('完成')],
+    [tool],
+  )
   const session = await service.newSession()
 
   const fresh = await service.chat(session.id, '开始')
@@ -65,7 +69,10 @@ test('an allowed tool call executes and its result is appended', async () => {
 
 test('a rejected call never executes the tool', async () => {
   const tool = new FakeTool('fake', 'fake-output')
-  const { service } = aService([assistantMessage('跑一下', [aCall]), deny('危险'), assistantMessage('好吧')], [tool])
+  const { service } = aService(
+    [assistantMessage('跑一下', [aCall]), deny('危险'), assistantMessage('好吧')],
+    [tool],
+  )
   const session = await service.newSession()
 
   const fresh = await service.chat(session.id, '开始')
@@ -75,7 +82,11 @@ test('a rejected call never executes the tool', async () => {
 })
 
 test('a rejection without reason uses the fixed wording', async () => {
-  const { service } = aService([assistantMessage('跑', [aCall]), deny(null), assistantMessage('好')])
+  const { service } = aService([
+    assistantMessage('跑', [aCall]),
+    deny(null),
+    assistantMessage('好'),
+  ])
   const session = await service.newSession()
 
   const fresh = await service.chat(session.id, '开始')
@@ -97,7 +108,11 @@ test('reviewer failure is fail-closed, not a crash', async () => {
 
   const fresh = await service.chat(session.id, '开始')
 
-  assert.deepEqual(fresh[2], { kind: 'tool_result', toolCallId: 'c1', content: '审查未通过：审查员不可用' })
+  assert.deepEqual(fresh[2], {
+    kind: 'tool_result',
+    toolCallId: 'c1',
+    content: '审查未通过：审查员不可用',
+  })
   assert.deepEqual(fresh[3], assistantMessage('完成'))
 })
 
@@ -111,7 +126,11 @@ test('an unknown tool becomes an error result', async () => {
 
   const fresh = await service.chat(session.id, '开始')
 
-  assert.deepEqual(fresh[2], { kind: 'tool_result', toolCallId: 'c1', content: 'error: unknown tool: nope' })
+  assert.deepEqual(fresh[2], {
+    kind: 'tool_result',
+    toolCallId: 'c1',
+    content: 'error: unknown tool: nope',
+  })
 })
 
 test('a tool exception becomes an error result', async () => {
@@ -123,7 +142,10 @@ test('a tool exception becomes an error result', async () => {
       throw new Error('炸了')
     },
   }
-  const { service } = aService([assistantMessage('跑一下', [{ ...aCall, toolName: 'boom' }]), allow, assistantMessage('完成')], [boom])
+  const { service } = aService(
+    [assistantMessage('跑一下', [{ ...aCall, toolName: 'boom' }]), allow, assistantMessage('完成')],
+    [boom],
+  )
   const session = await service.newSession()
 
   const fresh = await service.chat(session.id, '开始')

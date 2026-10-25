@@ -9,9 +9,9 @@
   "main": "src/agent/main.ts",
   "scripts": {
     "dev": "tsc && node src/agent/main.ts",
-    "start": "node src/agent/main.ts",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
+    "start": "node src/agent/main.ts",
     "test": "tsc && node --test 'src/agent/**/*.test.ts'"
   },
   "devDependencies": {

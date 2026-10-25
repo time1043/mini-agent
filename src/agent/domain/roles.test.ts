@@ -1,15 +1,22 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
+import type { ToolCall } from './session.ts'
+
 import { decodeDecision, decisionOutput } from './roles.ts'
 import { Assistant, ToolCallReviewer } from './roles.ts'
 import { Session, toolResult, userMessage } from './session.ts'
-import type { ToolCall } from './session.ts'
 
 test('decodeDecision accepts valid payloads and defaults reason to null', () => {
   assert.deepEqual(decodeDecision({ should_allow: true }), { shouldAllow: true, reason: null })
-  assert.deepEqual(decodeDecision({ should_allow: false, reason: null }), { shouldAllow: false, reason: null })
-  assert.deepEqual(decodeDecision({ should_allow: false, reason: '危险' }), { shouldAllow: false, reason: '危险' })
+  assert.deepEqual(decodeDecision({ should_allow: false, reason: null }), {
+    shouldAllow: false,
+    reason: null,
+  })
+  assert.deepEqual(decodeDecision({ should_allow: false, reason: '危险' }), {
+    shouldAllow: false,
+    reason: '危险',
+  })
 })
 
 test('decodeDecision rejects non-boolean should_allow and bad reason', () => {
@@ -45,10 +52,13 @@ test('reviewer context holds the last user message and the pending call', () => 
   const context = new ToolCallReviewer('审查').context(session, call)
   assert.equal(context.messages.length, 2)
   assert.deepEqual(context.messages[0], userMessage('删掉刚建的文件'))
-  assert.deepEqual(JSON.parse(context.messages[1].kind === 'user' ? context.messages[1].text : ''), {
-    tool: 'bash',
-    arguments: { command: 'rm file' },
-  })
+  assert.deepEqual(
+    JSON.parse(context.messages[1].kind === 'user' ? context.messages[1].text : ''),
+    {
+      tool: 'bash',
+      arguments: { command: 'rm file' },
+    },
+  )
   assert.equal(context.output.kind, 'json')
 })
 

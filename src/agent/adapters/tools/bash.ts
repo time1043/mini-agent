@@ -1,3 +1,5 @@
+import type { ChildProcess } from 'node:child_process'
+
 /**
  * bash 工具：在独立、非交互的 bash 进程中异步执行命令。
  * - 事件循环永不被阻塞（spawn 而非 spawnSync），web 模式下其他请求不受影响；
@@ -6,7 +8,6 @@
  * - 模型给的 arguments 不可信：参数缺失返回错误文本而非抛异常。
  */
 import { spawn } from 'node:child_process'
-import type { ChildProcess } from 'node:child_process'
 
 import type { Json } from '../../domain/json.ts'
 import type { Tool } from '../../domain/tool.ts'

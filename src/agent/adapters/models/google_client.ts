@@ -1,16 +1,17 @@
+import type { ModelClient, ModelSettings } from '../../app/ports.ts'
+import type { Context, OutputCodec } from '../../domain/context.ts'
+import type { Json } from '../../domain/json.ts'
+import type { Message, ToolCall } from '../../domain/session.ts'
+import type { ClientOptions } from './common.ts'
+
 /**
  * Google Gemini API 客户端。
  * Gemini 的 functionCall 不带 id：解码时按出现顺序合成 call_0、call_1…；
  * 渲染 functionResponse 时用完整历史回放建立 callId→toolName 映射，孤儿结果回退用 toolCallId。
  */
 import { ModelError } from '../../app/ports.ts'
-import type { ModelClient, ModelSettings } from '../../app/ports.ts'
-import type { Context, OutputCodec } from '../../domain/context.ts'
-import type { Json } from '../../domain/json.ts'
 import { assistantMessage } from '../../domain/session.ts'
-import type { Message, ToolCall } from '../../domain/session.ts'
 import { DEFAULT_TIMEOUT_MS, appendJsonHint, extractJson, postJson } from './common.ts'
-import type { ClientOptions } from './common.ts'
 
 export class GoogleModelClient implements ModelClient {
   #baseUrl: string
@@ -74,7 +75,11 @@ export function toContents(messages: readonly Message[]): Content[] {
   const toolNames = new Map<string, string>()
   const pushUserPart = (part: Record<string, unknown>): void => {
     const last = contents[contents.length - 1]
-    if (last && last.role === 'user' && last.parts.every((candidate) => 'functionResponse' in candidate)) {
+    if (
+      last &&
+      last.role === 'user' &&
+      last.parts.every((candidate) => 'functionResponse' in candidate)
+    ) {
       last.parts.push(part)
     } else {
       contents.push({ role: 'user', parts: [part] })

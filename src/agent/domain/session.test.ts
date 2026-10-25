@@ -26,16 +26,20 @@ const aSessionJSON = () => ({
 test('message factories produce discriminated unions', () => {
   assert.deepEqual(userMessage('hi'), { kind: 'user', text: 'hi' })
   assert.deepEqual(assistantMessage('ok'), { kind: 'assistant', text: 'ok', toolCalls: [] })
-  assert.deepEqual(assistantMessage('ok', [aToolCall]), { kind: 'assistant', text: 'ok', toolCalls: [aToolCall] })
-  assert.deepEqual(toolResult('c1', 'out'), { kind: 'tool_result', toolCallId: 'c1', content: 'out' })
+  assert.deepEqual(assistantMessage('ok', [aToolCall]), {
+    kind: 'assistant',
+    text: 'ok',
+    toolCalls: [aToolCall],
+  })
+  assert.deepEqual(toolResult('c1', 'out'), {
+    kind: 'tool_result',
+    toolCallId: 'c1',
+    content: 'out',
+  })
 })
 
 test('message json roundtrip keeps all kinds', () => {
-  const messages = [
-    userMessage('hi'),
-    assistantMessage('', [aToolCall]),
-    toolResult('c1', 'out'),
-  ]
+  const messages = [userMessage('hi'), assistantMessage('', [aToolCall]), toolResult('c1', 'out')]
   for (const message of messages) {
     assert.deepEqual(messageFromJSON(JSON.parse(JSON.stringify(messageToJSON(message)))), message)
   }
@@ -49,7 +53,9 @@ test('messageFromJSON rejects malformed data', () => {
   assert.throws(() => messageFromJSON({ kind: 'user', text: 1 }))
   assert.throws(() => messageFromJSON({ kind: 'assistant', text: 'x', toolCalls: 'no' }))
   assert.throws(() => messageFromJSON({ kind: 'assistant', text: 'x', toolCalls: [{ id: 'c' }] }))
-  assert.throws(() => messageFromJSON({ kind: 'assistant', text: 'x', toolCalls: [{ ...aToolCall, arguments: 3 }] }))
+  assert.throws(() =>
+    messageFromJSON({ kind: 'assistant', text: 'x', toolCalls: [{ ...aToolCall, arguments: 3 }] }),
+  )
   assert.throws(() => messageFromJSON({ kind: 'tool_result', toolCallId: 'c1' }))
 })
 

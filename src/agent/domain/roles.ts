@@ -1,12 +1,13 @@
+import type { Context, OutputCodec } from './context.ts'
+import type { AssistantMessage, Session, ToolCall, UserMessage } from './session.ts'
+import type { Tool } from './tool.ts'
+
 /**
  * 角色：向用户回复的 Assistant，与审查工具调用的 ToolCallReviewer。
  * 两个角色只负责「构造 Context」，真正调用模型的是应用层的 ModelClient。
  */
 import { assistantOutput, jsonOutput } from './context.ts'
-import type { Context, OutputCodec } from './context.ts'
 import { userMessage } from './session.ts'
-import type { AssistantMessage, Session, ToolCall, UserMessage } from './session.ts'
-import type { Tool } from './tool.ts'
 
 export interface Decision {
   readonly shouldAllow: boolean

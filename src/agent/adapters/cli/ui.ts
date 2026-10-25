@@ -1,8 +1,9 @@
+import type { Writable } from 'node:stream'
+
 /**
  * CLI 视觉资产：颜色与 banner（从 ts/base 的过程式 agent 迁入）。
  */
 import { spawnSync } from 'node:child_process'
-import type { Writable } from 'node:stream'
 
 export const GRAY = '\x1b[90m'
 export const CYAN = '\x1b[36m'

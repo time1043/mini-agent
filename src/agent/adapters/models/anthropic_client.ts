@@ -1,3 +1,9 @@
+import type { ModelClient, ModelSettings } from '../../app/ports.ts'
+import type { Context, OutputCodec } from '../../domain/context.ts'
+import type { Json } from '../../domain/json.ts'
+import type { Message, ToolCall } from '../../domain/session.ts'
+import type { ClientOptions } from './common.ts'
+
 /**
  * Anthropic Messages API 客户端。
  * 渲染上有两个防「会话变砖」的口径：
@@ -5,13 +11,8 @@
  * - 工具结果与后续用户文本合并进同一条 user 消息——对要求角色交替的旧版/代理实现保持兼容。
  */
 import { ModelError } from '../../app/ports.ts'
-import type { ModelClient, ModelSettings } from '../../app/ports.ts'
-import type { Context, OutputCodec } from '../../domain/context.ts'
-import type { Json } from '../../domain/json.ts'
 import { assistantMessage } from '../../domain/session.ts'
-import type { Message, ToolCall } from '../../domain/session.ts'
 import { DEFAULT_TIMEOUT_MS, appendJsonHint, extractJson, postJson } from './common.ts'
-import type { ClientOptions } from './common.ts'
 
 export interface AnthropicClientOptions extends ClientOptions {
   maxTokens?: number
@@ -100,7 +101,11 @@ export function toEntries(messages: readonly Message[]): Entry[] {
         break
       }
       case 'tool_result':
-        pushUserBlock({ type: 'tool_result', tool_use_id: message.toolCallId, content: message.content })
+        pushUserBlock({
+          type: 'tool_result',
+          tool_use_id: message.toolCallId,
+          content: message.content,
+        })
         break
     }
   }
@@ -121,8 +126,16 @@ function decodeContent<O>(output: OutputCodec<O>, blocks: unknown[]): O {
     const record = block as Record<string, unknown>
     if (record['type'] === 'text' && typeof record['text'] === 'string') {
       text += record['text']
-    } else if (record['type'] === 'tool_use' && typeof record['id'] === 'string' && typeof record['name'] === 'string') {
-      calls.push({ id: record['id'], toolName: record['name'], arguments: asObject(record['input']) })
+    } else if (
+      record['type'] === 'tool_use' &&
+      typeof record['id'] === 'string' &&
+      typeof record['name'] === 'string'
+    ) {
+      calls.push({
+        id: record['id'],
+        toolName: record['name'],
+        arguments: asObject(record['input']),
+      })
     }
   }
   if (output.kind === 'assistant') return output.decode(assistantMessage(text, calls))

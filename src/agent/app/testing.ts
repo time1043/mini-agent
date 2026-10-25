@@ -1,12 +1,13 @@
+import type { Context } from '../domain/context.ts'
+import type { Json } from '../domain/json.ts'
+import type { Session, SessionJSON } from '../domain/session.ts'
+import type { Tool } from '../domain/tool.ts'
+import type { ModelClient, ModelSettings, SessionStore } from './ports.ts'
+
 /**
  * 测试替身（fakes）：实现应用层端口，供 service / web / cli 测试共享。
  */
 import { SessionNotFoundError } from './ports.ts'
-import type { ModelClient, ModelSettings, SessionStore } from './ports.ts'
-import type { Context } from '../domain/context.ts'
-import type { Session, SessionJSON } from '../domain/session.ts'
-import type { Json } from '../domain/json.ts'
-import type { Tool } from '../domain/tool.ts'
 
 export class FakeTool implements Tool {
   readonly name: string

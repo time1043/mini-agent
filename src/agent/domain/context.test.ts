@@ -11,7 +11,9 @@ test('assistant output codec is the identity decode', () => {
 })
 
 test('json output codec carries the hint and decodes', () => {
-  const codec = jsonOutput<{ n: number }>('"n": number', (value) => ({ n: (value as { n: number }).n }))
+  const codec = jsonOutput<{ n: number }>('"n": number', (value) => ({
+    n: (value as { n: number }).n,
+  }))
   assert.equal(codec.kind, 'json')
   assert.equal(codec.jsonHint, '"n": number')
   assert.deepEqual(codec.decode({ n: 1 }), { n: 1 })

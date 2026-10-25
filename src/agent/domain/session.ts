@@ -4,8 +4,9 @@
  */
 import { randomBytes } from 'node:crypto'
 
-import { isJsonObject } from './json.ts'
 import type { Json } from './json.ts'
+
+import { isJsonObject } from './json.ts'
 
 /** 模型发起的一次工具调用。 */
 export interface ToolCall {
