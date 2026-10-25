@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "dev": "tsc --noEmit && tsx src/agent.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -22,6 +24,7 @@
   "devDependencies": {
     "@tsconfig/node-lts": "^24.0.1",
     "@types/node": "^26.6.5",
+    "oxfmt": "^0.74.0",
     "typescript": "^7.0.2"
   },
   "dependencies": {
