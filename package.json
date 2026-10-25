@@ -6,9 +6,10 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "index.js",
+  "main": "src/agent/main.ts",
   "scripts": {
-    "dev": "tsc && node src/agent.ts",
+    "dev": "tsc && node src/agent/main.ts",
+    "start": "node src/agent/main.ts",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "test": "tsc && node --test 'src/agent/**/*.test.ts'"
