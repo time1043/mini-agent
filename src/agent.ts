@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { Type, type AssistantMessage, type Context, type Tool } from '@earendil-works/pi-ai'
+import { Agent, type AgentEvent, type AgentTool } from '@earendil-works/pi-agent-core'
+import { Type } from '@earendil-works/pi-ai'
 import { builtinModels } from '@earendil-works/pi-ai/providers/all'
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -16,12 +17,6 @@ const SYSTEM_PROMPT = '使用 bash 完成当前目录下的任务。中文回复
 
 const PROVIDER = 'deepseek'
 const MODEL = 'deepseek-flash'
-
-const BASH_TOOL: Tool = {
-  name: 'bash',
-  description: '在独立、非交互的 bash 进程中执行命令。返回退出码和输出。',
-  parameters: Type.Object({ command: Type.String() }),
-}
 
 function loadApiKey(provider: string, filename = join(homedir(), '.pi/agent/auth.json')): string {
   const auth = JSON.parse(readFileSync(filename, 'utf-8'))
@@ -47,27 +42,17 @@ function runBash(command: string): string {
 
 const models = builtinModels()
 
-async function readReply(context: Context, apiKey: string): Promise<AssistantMessage> {
-  const stream = models.streamSimple(models.getModel(PROVIDER, MODEL)!, context, {
-    apiKey,
-    reasoning: 'medium',
-  })
-  let printingThinking = false
-  for await (const event of stream) {
-    if (event.type === 'thinking_delta') {
-      printingThinking = true
-      process.stdout.write(`${GRAY}${event.delta}${RESET}`)
-    } else if (event.type === 'text_delta') {
-      if (printingThinking) {
-        process.stdout.write('\n\n')
-        printingThinking = false
-      }
-      process.stdout.write(event.delta)
-    }
-  }
-  const reply = await stream.result()
-  process.stdout.write('\n')
-  return reply
+const BASH_PARAMS = Type.Object({ command: Type.String() })
+
+const BASH_TOOL: AgentTool<typeof BASH_PARAMS> = {
+  name: 'bash',
+  label: 'Bash',
+  description: '在独立、非交互的 bash 进程中执行命令。返回退出码和输出。',
+  parameters: BASH_PARAMS,
+  execute: async (_toolCallId, params) => ({
+    content: [{ type: 'text', text: runBash(params.command) }],
+    details: undefined,
+  }),
 }
 
 async function main(): Promise<void> {
@@ -75,11 +60,39 @@ async function main(): Promise<void> {
   if (banner.error) console.log('MiniAgent')
 
   const apiKey = loadApiKey('DeepSeek')
-  const context: Context = {
-    systemPrompt: SYSTEM_PROMPT,
-    messages: [],
-    tools: [BASH_TOOL],
-  }
+  const agent = new Agent({
+    initialState: {
+      systemPrompt: SYSTEM_PROMPT,
+      model: models.getModel(PROVIDER, MODEL)!,
+      thinkingLevel: 'medium',
+      tools: [BASH_TOOL],
+    },
+    streamFn: models.streamSimple.bind(models),
+    getApiKey: async () => apiKey,
+  })
+
+  let printingThinking = false
+  agent.subscribe((event: AgentEvent) => {
+    if (event.type === 'message_update') {
+      const delta = event.assistantMessageEvent
+      if (delta.type === 'thinking_delta') {
+        printingThinking = true
+        process.stdout.write(`${GRAY}${delta.delta}${RESET}`)
+      } else if (delta.type === 'text_delta') {
+        if (printingThinking) {
+          process.stdout.write('\n\n')
+          printingThinking = false
+        }
+        process.stdout.write(delta.delta)
+      }
+    } else if (event.type === 'message_end' && event.message.role === 'assistant') {
+      printingThinking = false
+      process.stdout.write('\n')
+      if (event.message.stopReason === 'error') {
+        process.stdout.write(`[error] ${event.message.errorMessage ?? 'unknown'}\n`)
+      }
+    }
+  })
 
   const rl = createInterface({ input: process.stdin })
   rl.pause()
@@ -98,26 +111,7 @@ async function main(): Promise<void> {
     rl.pause()
     if (!userInput) break
     process.stdout.write('\n')
-    context.messages.push({ role: 'user', content: userInput, timestamp: Date.now() })
-
-    for (;;) {
-      const reply = await readReply(context, apiKey)
-      context.messages.push(reply)
-      if (reply.stopReason !== 'toolUse') break
-      for (const block of reply.content) {
-        if (block.type === 'toolCall') {
-          const output = runBash((block.arguments as { command: string }).command)
-          context.messages.push({
-            role: 'toolResult',
-            toolCallId: block.id,
-            toolName: block.name,
-            content: [{ type: 'text', text: output }],
-            isError: false,
-            timestamp: Date.now(),
-          })
-        }
-      }
-    }
+    await agent.prompt(userInput)
   }
 }
 
